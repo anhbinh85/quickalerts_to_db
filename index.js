@@ -1,25 +1,41 @@
+require('dotenv').config(); // Load environment variables from .env file
 const express = require('express');
-const bodyParser = require('body-parser');
+const { Pool } = require('pg');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Parse JSON request bodies
-app.use(bodyParser.json());
+app.use(express.json());
 
-app.post('/webhook', (req, res) => {
+// Connect to PostgreSQL using the connection string from the environment variable
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+app.post('/webhook', async (req, res) => {
+  try {
     const eventData = req.body;
+    const blockNumber = parseInt(eventData[0].blockNumber, 16);
+    const blockHash = eventData[0].blockHash;
+    const transactionHash = eventData[0].transactionHash;
+    const network = eventData[0].chain;
 
-    // Basic logging to console
-    console.log('Received QuickAlert:', JSON.stringify(eventData, null, 2));
+    // Insert into the database
+    const query = `
+        INSERT INTO quickalerts_events (block_number, block_hash, transaction_hash, network, event_data)
+        VALUES ($1, $2, $3, $4, $5)
+    `;
+    const values = [blockNumber, blockHash, transactionHash, network, JSON.stringify(eventData)];
+    await pool.query(query, values);
 
-    // TODO: Process the eventData (e.g., store in database, trigger actions)
-    // In a real app, you would replace this with your database logic
-    // and any other actions you want to take.
-
-    res.status(200).send('Event received');
+    console.log('Event recorded:', eventData);
+    res.status(200).send('Event received and recorded');
+  } catch (error) {
+    console.error('Error processing webhook:', error);
+    res.status(500).send('Error processing event');
+  }
 });
 
 app.listen(PORT, () => {
-    console.log(`Webhook server listening on port ${PORT}`);
+  console.log(`Webhook server listening on port ${PORT}`);
 });

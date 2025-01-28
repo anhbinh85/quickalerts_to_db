@@ -2,12 +2,17 @@
 require('dotenv').config();
 const express = require('express');
 const { MongoClient, ServerApiVersion } = require('mongodb');
-const { handleAaveFlashLoan, handleGeneralEvent } = require('./quickalerts');
+const {
+  handleAaveFlashLoan,
+  handleGeneralEvent,
+  handleEthTransfer,
+  handleErc20Transfer
+} = require('./quickalerts');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // MongoDB connection details from environment variables
 const uri = process.env.MONGODB_URI;
@@ -42,6 +47,8 @@ async function run() {
           // Call the appropriate handler function based on the event type
           await handleGeneralEvent(eventData, database); // Handle general events
           await handleAaveFlashLoan(eventData, database); // Handle Aave flash loan events
+          await handleEthTransfer(eventData, database);
+          await handleErc20Transfer(eventData, database);
         }
 
         res.status(200).send('Events received and recorded');

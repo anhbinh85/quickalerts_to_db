@@ -3,7 +3,7 @@ const { Pool } = require('pg');
 
 // Database connection configuration
 const pool = new Pool({
-  connectionString: "postgresql://postgres:bsaD7qVRdBSebUVC@punctually-copious-parakeet.data-1.use1.tembo.io:5432/postgres", // Get connection string from .env
+  connectionString: "", // Get connection string from .env
 });
 
 async function testDatabaseConnection() {
